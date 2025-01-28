@@ -7,7 +7,7 @@ const path = require("path");
 
 const authRoutes = require("./Routes/AuthenticationRoutes");
 const hompageRoutes = require("./Routes/HomePageRoute");
-
+const profileRoute = require("./Routes/UserRoutes");
 const app = express();
 
 // Allowed origins for CORS
@@ -34,5 +34,6 @@ app.use(
 // Routes
 app.use("/api/v1", authRoutes);
 app.use("/api/v1", hompageRoutes);
+app.use("/api/v1", profileRoute);
 
 module.exports = app;

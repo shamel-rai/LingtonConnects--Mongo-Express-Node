@@ -54,7 +54,7 @@ const UserSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
-    interest: [
+    interests: [
       {
         type: String,
       },

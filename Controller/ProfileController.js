@@ -2,47 +2,65 @@ const User = require("../Models/UserModel");
 const fs = require("fs");
 const path = require("path");
 
-//this is for authenticated purpose
 const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({ error: "user not found" });
-    }
-    res.status(200).json(user);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Failed to fetch the profile", details: error.message });
-  }
-};
-
-//no Authentication required
-const getPublicProfile = async (req, res) => {
-  try {
     const user = await User.findById(req.params.id).select(
-      "username bio profilepicture followers following"
+      "username bio profilePicture interests followers following posts"
     );
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    res.status(200).json(user);
+
+    res.status(200).json({
+      username: user.username,
+      bio: user.bio,
+      profilePicture: user.profilePicture || "https://via.placeholder.com/150",
+      interests: user.interests || [],
+      followers: Array.isArray(user.followers) ? user.followers.length : 0,
+      following: Array.isArray(user.following) ? user.following.length : 0,
+      posts: user.posts || 0,
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Failed to fetch the profile", details: error.message });
+    res.status(500).json({
+      error: "Failed to fetch the profile",
+      details: error.message,
+    });
   }
 };
 
+// No Authentication required
+const getPublicProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select(
+      "username bio profilePicture followers following"
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to fetch the profile",
+      details: error.message,
+    });
+  }
+};
+
+// Update profile (authenticated user)
 const updateProfile = async (req, res) => {
   try {
-    const { username, bio, interest } = req.body;
+    const { username, bio, interests } = req.body;
     const updateFields = { username, bio };
-    if (interest) {
-      updateFields.interest = JSON.parse(interest);
+
+    if (interests) {
+      updateFields.interests = Array.isArray(interests)
+        ? interests
+        : JSON.parse(interests);
     }
+
     const user = await User.findByIdAndUpdate(req.params.id, updateFields, {
       new: true,
       runValidators: true,
@@ -51,22 +69,26 @@ const updateProfile = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+
     res.status(200).json({
-      message: "Profile updated Successully",
+      message: "Profile updated successfully",
       user,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Failed to update profile", details: error.message });
+    res.status(500).json({
+      error: "Failed to update profile",
+      details: error.message,
+    });
   }
 };
 
+// Update profile picture
 const updateProfilePicture = async (req, res) => {
   try {
     const userId = req.params.id;
+
     if (!req.file) {
-      return res.status(404).json({ error: "No file uploaded" });
+      return res.status(400).json({ error: "No file uploaded" });
     }
 
     const profilePicturePath = `/Uploads/${req.file.filename}`;
@@ -76,46 +98,48 @@ const updateProfilePicture = async (req, res) => {
       { profilePicture: profilePicturePath },
       { new: true, runValidators: true }
     );
+
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+
     res.status(200).json({
-      message: "Profile picture updated Sucessfully",
+      message: "Profile picture updated successfully",
       profilePicture: user.profilePicture,
     });
   } catch (error) {
     res.status(500).json({
-      message: "Failed to updated profile picture",
+      error: "Failed to update profile picture",
       details: error.message,
     });
   }
 };
 
-// Followers
-const getFollower = async (req, res) => {
+// Get followers
+const getFollowers = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).populate(
       "followers",
       "username profilePicture"
     );
+
     if (!user) {
-      return res.status(404).json({ error: "User not found " });
+      return res.status(404).json({ error: "User not found" });
     }
+
     res.status(200).json(user.followers);
   } catch (error) {
     res.status(500).json({
-      error: "Failed to fetch the user follwers",
+      error: "Failed to fetch followers",
       details: error.message,
     });
   }
 };
 
-//Following
+// Get following
 const getFollowing = async (req, res) => {
   try {
-    const userId = req.params.id;
-
-    const user = await User.findById(userId).populate(
+    const user = await User.findById(req.params.id).populate(
       "following",
       "username profilePicture"
     );
@@ -123,16 +147,17 @@ const getFollowing = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+
     res.status(200).json(user.following);
   } catch (error) {
     res.status(500).json({
-      error: "Failed to fetch user following",
+      error: "Failed to fetch following",
       details: error.message,
     });
   }
 };
 
-// follow a user
+// Follow a user
 const followUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -141,22 +166,24 @@ const followUser = async (req, res) => {
     if (!user || !currentUser) {
       return res.status(404).json({ error: "User not found" });
     }
+
     if (!user.followers.includes(req.user.id)) {
       user.followers.push(req.user.id);
       currentUser.following.push(req.params.id);
+      await user.save();
+      await currentUser.save();
     }
 
-    await user.save();
-    await currentUser.save();
-    res.status(200).json({ message: "Followed user Successfully " });
+    res.status(200).json({ message: "Followed user successfully" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Failed to follow user", details: error.message });
+    res.status(500).json({
+      error: "Failed to follow user",
+      details: error.message,
+    });
   }
 };
 
-//Unfollow
+// Unfollow a user
 const unfollowUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -165,44 +192,54 @@ const unfollowUser = async (req, res) => {
     if (!user || !currentUser) {
       return res.status(404).json({ error: "User not found" });
     }
-    user.following = user.following.filter(
+
+    user.followers = user.followers.filter(
       (id) => id.toString() !== req.user.id
     );
-    currentUser.following = currentUser.following(
-      (id) => id.toString !== req.param.id
+    currentUser.following = currentUser.following.filter(
+      (id) => id.toString() !== req.params.id
     );
 
     await user.save();
     await currentUser.save();
 
-    res.status(200).json({ message: "User Unfollowed" });
+    res.status(200).json({ message: "Unfollowed user successfully" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Failed to unfollow user", details: error.message });
+    res.status(500).json({
+      error: "Failed to unfollow user",
+      details: error.message,
+    });
   }
 };
 
+// Increment post count
 const incrementPostCount = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
+
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ error: "User not found" });
     }
-    user.post = (user.post || 0) + 1;
-    await User.save();
-    res.status({ message: "Post count increament", post: user.post });
+
+    user.posts = (user.posts || 0) + 1;
+    await user.save();
+
+    res.status(200).json({
+      message: "Post count incremented",
+      posts: user.posts,
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Failed to fetch post Count", details: error.message });
+    res.status(500).json({
+      error: "Failed to increment post count",
+      details: error.message,
+    });
   }
 };
 
 module.exports = {
   getProfile,
   getPublicProfile,
-  getFollower,
+  getFollowers,
   getFollowing,
   updateProfile,
   updateProfilePicture,
