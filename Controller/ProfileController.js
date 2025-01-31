@@ -85,10 +85,20 @@ const updateProfile = async (req, res) => {
 // Update profile picture
 const updateProfilePicture = async (req, res) => {
   try {
+    console.log("🔹 Request received at /profile-picture");
+    console.log("Headers:", req.headers);
+    console.log("Body:", req.body);
+    console.log("File:", req.file);
+
     const userId = req.params.id;
 
     if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded. Ensure the field name is 'profilePicture'." });
+      console.error("🚨 No file received in request.");
+      return res
+        .status(400)
+        .json({
+          error: "No file uploaded. Ensure the field name is 'profilePicture'.",
+        });
     }
 
     const profilePicturePath = `/uploads/${req.file.filename}`;
@@ -100,22 +110,23 @@ const updateProfilePicture = async (req, res) => {
     );
 
     if (!user) {
+      console.error("🚨 User not found.");
       return res.status(404).json({ error: "User not found" });
     }
 
+    console.log("✅ Profile picture updated successfully!");
     res.status(200).json({
       message: "Profile picture updated successfully",
       profilePicture: user.profilePicture,
     });
   } catch (error) {
-    console.error("Error uploading profile picture:", error);
+    console.error("🚨 Error uploading profile picture:", error);
     res.status(500).json({
       error: "Failed to update profile picture",
       details: error.message,
     });
   }
 };
-
 
 // Get followers
 const getFollowers = async (req, res) => {
