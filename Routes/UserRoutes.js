@@ -35,10 +35,9 @@ router.put("/:id", auth, updateProfile);
 router.put(
   "/:id/profile-picture",
   auth,
-  upload.single("file"),
+  upload.single("profilePicture"), // ✅ Ensure the field name is "profilePicture"
   updateProfilePicture
 );
-
 // Routes to manage followers/following (requires authentication)
 router.get("/:id/followers", auth, getFollowers);
 router.get("/:id/following", auth, getFollowing);

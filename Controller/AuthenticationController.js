@@ -5,7 +5,7 @@ const Blacklist = require("../Models/TokenModel");
 const secret = process.env.JWT_SECRET;
 
 const signToken = (id) => {
-  return jwt.sign({ id }, secret, { expiresIn: "1h" });
+  return jwt.sign({ id }, secret, { expiresIn: "7d" });
 };
 
 const tokenGen = (user, statusCode, res) => {

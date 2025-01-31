@@ -1,14 +1,21 @@
-// Middleware/Upload.js
-
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
 
-// Configure disk storage
+// Ensure uploads directory exists
+const uploadDir = path.join(__dirname, "../uploads/");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Configure storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "Uploads/"); // Folder to save uploads
+    console.log("📝 Multer: Storing file in uploads/ directory...");
+    cb(null, uploadDir); // ✅ Fixed case-sensitive directory issue
   },
   filename: (req, file, cb) => {
+    console.log("📝 Multer: Processing file:", file.originalname);
     const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(
       null,
@@ -17,28 +24,32 @@ const storage = multer.diskStorage({
   },
 });
 
-// File filter for images/videos
+// File filter
 const fileFilter = (req, file, cb) => {
-  // Allowed file extensions
+  console.log("📝 Multer: Filtering file:", file.mimetype);
   const allowedFileTypes = /jpeg|jpg|png|gif|mp4|mkv|avi|mov/;
   const extName = allowedFileTypes.test(
     path.extname(file.originalname).toLowerCase()
   );
-  // NOTE: must be file.mimetype (all lowercase)
-  const mimeType = allowedFileTypes.test(file.mimetype);
+  const mimeType = allowedFileTypes.test(file.mimetype.toLowerCase());
 
   if (extName && mimeType) {
+    console.log("✅ Multer: File accepted.");
     cb(null, true);
   } else {
-    cb(new Error("Only image and video files are allowed"));
+    console.error("🚨 Multer: Invalid file type.");
+    cb(new Error("Only image and video files are allowed"), false);
   }
 };
 
+// Configure Multer
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB max
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
 });
 
-// IMPORTANT: This exports `upload` as the default
+// ✅ Log when Multer processes a file
+upload.single("profilePicture");
+
 module.exports = upload;

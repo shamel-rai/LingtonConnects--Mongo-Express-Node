@@ -88,10 +88,10 @@ const updateProfilePicture = async (req, res) => {
     const userId = req.params.id;
 
     if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
+      return res.status(400).json({ error: "No file uploaded. Ensure the field name is 'profilePicture'." });
     }
 
-    const profilePicturePath = `/Uploads/${req.file.filename}`;
+    const profilePicturePath = `/uploads/${req.file.filename}`;
 
     const user = await User.findByIdAndUpdate(
       userId,
@@ -108,12 +108,14 @@ const updateProfilePicture = async (req, res) => {
       profilePicture: user.profilePicture,
     });
   } catch (error) {
+    console.error("Error uploading profile picture:", error);
     res.status(500).json({
       error: "Failed to update profile picture",
       details: error.message,
     });
   }
 };
+
 
 // Get followers
 const getFollowers = async (req, res) => {
