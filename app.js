@@ -12,8 +12,8 @@ const app = express();
 
 // Allowed origins for CORS
 const allowedOrigins = [
-  "http://192.168.101.5:8081",
-  "http://192.168.101.5",
+  "http://192.168.101.9:8081",
+  "http://192.168.101.9",
   "http://100.64.204.241:8081",
 ];
 

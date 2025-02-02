@@ -19,7 +19,9 @@ const getProfile = async (req, res) => {
       interests: user.interests || [],
       followers: Array.isArray(user.followers) ? user.followers.length : 0,
       following: Array.isArray(user.following) ? user.following.length : 0,
-      posts: user.posts || 0,
+      // followers: user.followers.length,
+      // following: user.following.length,
+      posts: user.post || 0,
     });
   } catch (error) {
     res.status(500).json({
@@ -94,11 +96,9 @@ const updateProfilePicture = async (req, res) => {
 
     if (!req.file) {
       console.error("🚨 No file received in request.");
-      return res
-        .status(400)
-        .json({
-          error: "No file uploaded. Ensure the field name is 'profilePicture'.",
-        });
+      return res.status(400).json({
+        error: "No file uploaded. Ensure the field name is 'profilePicture'.",
+      });
     }
 
     const profilePicturePath = `/uploads/${req.file.filename}`;
@@ -140,7 +140,10 @@ const getFollowers = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.status(200).json(user.followers);
+    res.status(200).json({
+      count: user.followers.length,
+      followers: user.followers,
+    });
   } catch (error) {
     res.status(500).json({
       error: "Failed to fetch followers",
@@ -161,7 +164,10 @@ const getFollowing = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.status(200).json(user.following);
+    res.status(200).json({
+      count: user.following.length,
+      following: user.following,
+    });
   } catch (error) {
     res.status(500).json({
       error: "Failed to fetch following",

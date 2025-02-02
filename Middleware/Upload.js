@@ -2,17 +2,15 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-// Ensure uploads directory exists
 const uploadDir = path.join(__dirname, "../uploads/");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Configure storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     console.log("📝 Multer: Storing file in uploads/ directory...");
-    cb(null, uploadDir); // ✅ Fixed case-sensitive directory issue
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     console.log("📝 Multer: Processing file:", file.originalname);
@@ -24,7 +22,6 @@ const storage = multer.diskStorage({
   },
 });
 
-// File filter
 const fileFilter = (req, file, cb) => {
   console.log("📝 Multer: Filtering file:", file.mimetype);
   const allowedFileTypes = /jpeg|jpg|png|gif|mp4|mkv|avi|mov/;
@@ -42,14 +39,12 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Configure Multer
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+  limits: { fileSize: 50 * 1024 * 1024 },
 });
 
-// ✅ Log when Multer processes a file
 upload.single("profilePicture");
 
 module.exports = upload;
