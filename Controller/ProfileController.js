@@ -52,8 +52,44 @@ const getPublicProfile = async (req, res) => {
 };
 
 // Update profile (authenticated user)
+// const updateProfile = async (req, res) => {
+//   try {
+//     const { username, bio, interests } = req.body;
+//     const updateFields = { username, bio };
+
+//     if (interests) {
+//       updateFields.interests = Array.isArray(interests)
+//         ? interests
+//         : JSON.parse(interests);
+//     }
+
+//     const user = await User.findByIdAndUpdate(req.params.id, updateFields, {
+//       new: true,
+//       runValidators: true,
+//     });
+
+//     if (!user) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+
+//     res.status(200).json({
+//       message: "Profile updated successfully",
+//       user,
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       error: "Failed to update profile",
+//       details: error.message,
+//     });
+//   }
+// };
+
 const updateProfile = async (req, res) => {
   try {
+    console.log("🛠️ Received update request at /profile/:id");
+    console.log("Headers:", req.headers);
+    console.log("Body:", req.body);
+
     const { username, bio, interests } = req.body;
     const updateFields = { username, bio };
 
@@ -69,14 +105,17 @@ const updateProfile = async (req, res) => {
     });
 
     if (!user) {
+      console.log("🚨 User not found.");
       return res.status(404).json({ error: "User not found" });
     }
 
+    console.log("✅ Profile details updated successfully:", user);
     res.status(200).json({
       message: "Profile updated successfully",
       user,
     });
   } catch (error) {
+    console.error("🚨 Error updating profile:", error.message);
     res.status(500).json({
       error: "Failed to update profile",
       details: error.message,
