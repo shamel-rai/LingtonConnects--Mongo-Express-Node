@@ -1,20 +1,26 @@
 const express = require("express");
 const auth = require("../Middleware/Authentication");
 const {
-  getPost,
   addpost,
+  getAllPost,
+  getPost,
   like,
   comment,
   share,
 } = require("../Controllers/PostController");
-const { getUserPost } = require("../Controller/PostController");
 
 const router = express.Router();
 
 router.route("/posts").post(auth, addpost);
-router.route("/posts").get(auth, getPost);
-routter.route("/posts/:id").get(auth, getUserPost);
-router.route("/post/:id/like", auth, like);
-router.route("/posts/:id/comment", auth, comment);
-router.route("/posts/:id/share", auth, share);
+
+router.route("/posts/all").get(auth, getAllPost);
+
+router.route("/posts/home-feed").get(auth, getPost);
+
+router.route("/posts/:id/like").post(auth, like);
+
+router.route("/posts/:id/comment").post(auth, comment);
+
+router.route("/posts/:id/share").post(auth, share);
+
 module.exports = router;

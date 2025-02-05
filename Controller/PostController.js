@@ -1,162 +1,140 @@
 const Post = require("../Models/PostModel");
+const User = require("../Models/UserModel");
 
 //Create post
-const addpost = async (req, res) => {
-  const { content, image } = req.body;
-
-  if (!content) {
-    return res.status(400).json({ message: "Content is required" });
-  }
-
-  if (!req.user || !req.user.id) {
-    return res.status(401).json({ message: "Unauthoriz" });
-  }
+exports.addpost = async (req, res) => {
   try {
+    const { content, location, tags } = req.body;
+    const userId = req.user.id;
+
+    let media = [];
+    if (!req.body) {
+      media = req.files.map((file) => file.path); // will store media path
+    }
+
+    const taggedUser = tags
+      ? await User.find({ username: { $in: tags } }).select("_id")
+      : [];
+
     const newPost = new Post({
-      user: req.user.id,
+      user: userId,
       content,
-      image: image || "",
+      media,
+      location,
+      tags: taggedUser.map((user) => user._id),
     });
+
     await newPost.save();
-    res.status(201).json({
-      message: "Post created successfully",
-      post: newPost,
-    });
+
+    res
+      .status(201)
+      .json({ message: "Post created successfully!", post: newPost });
   } catch (error) {
-    res.status(500).json({ message: "Sever error", error });
+    res
+      .status(500)
+      .json({ message: "Error creating Post", error: error.message });
   }
 };
 
-//getAll post
-const getPost = async (req, res) => {
+//getallpost (even if user follows or does not follow)
+exports.getAllPost = async (req, res) => {
   try {
-    const posts = await Post.find()
-      .sort({ time: -1 })
-      .populate("user", "fullname username profilePicture")
-      .populate("comments.user", "fullname username profilePicture");
-    res.status(200).json({
-      status: "Success",
-      posts,
-    });
+    const posts = await Post.find({})
+      .populate("user", "username profilePicture fullname")
+      .populate("tags", "username")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ message: "All Post", posts });
   } catch (error) {
-    res.status(500).json({ message: "Sever error", error });
+    res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
 
-//Get userPost
-const getUserPost = async (req, res) => {
-  const { userId } = req.params;
+//get post
+exports.getPost = async (req, res) => {
   try {
-    const post = await User.find({ user: userId })
-      .sort({ time: -1 })
-      .populate("user", "fullname username profilePicture")
-      .populate("comments.user", "fullname username profilePicture");
-    res.status(200).json({ status: "Success", post });
-  } catch (error) {
-    res.status(500).status({ message: "Server Error", error });
-  }
-};
+    const userId = req.user.id;
+    const user = await User.findById(userId).populate("following", "id");
 
-const like = async (req, res) => {
-  const { id } = req.params;
-  const userId = req.user.id;
-
-  try {
-    const post = await Post.findById(id);
-    if (!post) {
-      return res.status(404).json({
-        message: "Post not found",
-      });
+    if (!user) {
+      return res.status(404).json({ message: "User not Found" });
     }
+    const followedUser = user.following.map((f) => f.id);
 
-    const index = post.likedBy.indexOf(userId);
-    if (index === -1) {
-      post.likedBy.push(userID);
-      post.likes += 1;
-    } else {
-      post.likedBy.splice(index, 1);
-      post.likes -= 1;
-    }
-    await post.save();
+    const post = await Post.find({ user: { $in: followedUser } })
+      .populate("user", "username profilepicture, fullname")
+      .populate("tags", "username")
+      .sort({ createdAt: -1 });
+
     res.status(200).json({
-      message: "Post like status successfully",
+      message: "Home Feed",
       post,
     });
   } catch (error) {
-    res.status(500).json({
-      message: "Server error",
-      error,
-    });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
-const comment = async (req, res) => {
-  const { id } = req.params;
-  const { content } = req.body;
-
-  if (!content) {
-    return res.status(400).json({
-      message: "Comment content is required",
-    });
-  }
-
+//Like
+exports.like = async (req, res) => {
   try {
-    const post = await Post.findById(id);
-    if (!post) {
-      return res.status(404).json({
-        message: "Post not found",
-      });
+    const userId = req.user.id;
+    const post = await Post.findById(req.params.id);
+
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    if (post.likedBy.includes(userId)) {
+      post.likedBy.pull(userId);
+      post.likes -= 1;
+    } else {
+      post.likedBy.push(userId);
+      post.likes += 1;
     }
+
+    await post.save();
+    res.status(200).json({ message: "Post liked/unliked", post });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+//Comments
+exports.comment = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { content } = req.body;
+    const post = await Post.findById(req.params.id);
+
+    if (!post) return res.status(404).json({ messsage: " Post not found" });
+
     const newComment = {
-      user: req.user.id,
+      user: userId,
       content,
+      time: new Date(),
     };
+
     post.comments.push(newComment);
     await post.save();
 
-    await post.populate("comments.user", " fullname username profilePicture");
-
-    res.status(201).json({
-      message: "Comment added succesfully",
-      post,
-    });
+    res.status(200).json({ message: "Comment added", post });
   } catch (error) {
-    res.status(500).json({
-      message: "Server error",
-      error,
-    });
+    res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
 
-const share = async (req, res) => {
-  const { id } = req.params;
+//share
+exports.share = async (req, res) => {
   try {
-    const post = await Post.findById(id);
-    if (!post) {
-      return res.status(404).json({
-        message: "Post not found",
-      });
-    }
+    const userId = req.user.id;
+    const post = await Post.findById(req.params.id);
+
+    if (!post) return res.status(404).json({ message: "post not found" });
 
     post.shares += 1;
     await post.save();
-    res.status(200).json({
-      message: "Post shared successfully",
-      post,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Server error",
-      error,
-    });
-  }
-};
 
-module.exports = {
-  addpost,
-  getPost,
-  like,
-  getUserPost,
-  comment,
-  share,
+    res.status(200).json({ message: "Post shared", post });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 };
