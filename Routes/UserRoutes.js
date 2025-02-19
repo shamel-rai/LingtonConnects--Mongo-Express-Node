@@ -18,7 +18,7 @@ const { auth } = require("../Middleware/Authentication");
 
 // We exported 'upload' as the default from Upload.js
 // So we import it directly without curly braces
-const upload = require("../Middleware/Upload");
+const { uploadSingle } = require("../Middleware/Upload");
 
 const router = express.Router();
 
@@ -35,7 +35,7 @@ router.put("/:id", auth, updateProfile);
 router.put(
   "/:id/profile-picture",
   auth,
-  upload.single("profilePicture"), // ✅ Ensure the field name is "profilePicture"
+  uploadSingle, // ✅ Ensure the field name is "profilePicture"
   updateProfilePicture
 );
 // Routes to manage followers/following (requires authentication)

@@ -2,7 +2,7 @@ const express = require("express");
 const {
   refreshAccessToken,
   revokeRefreshToken,
-} = require("../Controllers/TokenController");
+} = require("../Controller/TokenController");
 
 const router = express.Router();
 

@@ -7,34 +7,42 @@ exports.addpost = async (req, res) => {
     const { content, location, tags } = req.body;
     const userId = req.user.id;
 
-    let media = [];
-    if (!req.body) {
-      media = req.files.map((file) => file.path); // will store media path
+    if (!content && (!req.files || req.files.length === 0)) {
+      return res.status(400).json({ message: "Post must have a content or media" })
+
     }
 
-    const taggedUser = tags
-      ? await User.find({ username: { $in: tags } }).select("_id")
-      : [];
+    let media = [];
+    if (req.files && req.files.length > 0) {
+      media = req.files.map((file) => {
+        // Convert absolute path to a relative path for storage
+        return `uploads/${file.filename}`;
+      });
+    }
+    let taggedUsers = [];
+    if (tags && tags.length > 0) {
+      const foundUsers = await User.find({ _id: { $in: tags } }).select("_id");
+      taggedUsers = foundUsers.map(user => user._id);
+    }
 
     const newPost = new Post({
       user: userId,
       content,
       media,
       location,
-      tags: taggedUser.map((user) => user._id),
-    });
+      tags: taggedUsers
+    })
 
-    await newPost.save();
+    await newPost.save()
+    res.status(201).json({ message: "Post Created Successfully: ", post: newPost });
 
-    res
-      .status(201)
-      .json({ message: "Post created successfully!", post: newPost });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error creating Post", error: error.message });
+
   }
-};
+  catch (error) {
+    console.error("Error creating post: ", error);
+    res.status(500).json({ message: "Erroer creating post: ", error: error.message })
+  };
+}
 
 //getallpost (even if user follows or does not follow)
 exports.getAllPost = async (req, res) => {
@@ -135,6 +143,58 @@ exports.share = async (req, res) => {
 
     res.status(200).json({ message: "Post shared", post });
   } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+exports.deletePost = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const postId = req.params.id;
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    // Checking if the user is the post owner
+    if (post.user.toString() != userId) {
+      return res.status(401).json({ message: "Unauthorized: You cannot delete the post" });
+    }
+
+    // Delete associated media files
+    if (post.media && post.media.length > 0) {
+      // Option 1: Sequential deletion
+      for (const filePath of post.media) {
+        const fullFilePath = path.join(__dirname, "..", filePath);
+        try {
+          await fs.promises.unlink(fullFilePath);
+          console.log(`Deleted file: ${fullFilePath}`);
+        } catch (error) {
+          console.error(`Error deleting file ${fullFilePath}:`, error);
+        }
+      }
+
+      // Option 2: Concurrent deletion (uncomment to use)
+      /*
+      await Promise.all(post.media.map(async (filePath) => {
+        const fullFilePath = path.join(__dirname, "..", filePath);
+        try {
+          await fs.promises.unlink(fullFilePath);
+          console.log(`Deleted file: ${fullFilePath}`);
+        } catch (error) {
+          console.error(`Error deleting file ${fullFilePath}:`, error);
+        }
+      }));
+      */
+    }
+
+    // Delete the post from the database
+    await Post.findByIdAndDelete(postId);
+
+    res.status(200).json({ message: "Post and associated media deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting the post:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };

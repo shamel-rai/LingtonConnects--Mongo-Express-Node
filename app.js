@@ -13,11 +13,11 @@ const app = express();
 
 // Allowed origins for CORS
 const allowedOrigins = [
-  "http://192.168.101.3:8081",
-  "http://192.168.101.3",
+  "http://192.168.101.8:8081",
+  "http://192.168.101.8",
   "http://100.64.204.241:8081",
   "http://localhost:8081", // Allow localhost for debugging
-  "http://192.168.101.3:3001", // Ensure React Native Expo is allowed
+  "http://192.168.101.8:3001", // Ensure React Native Expo is allowed
   "http://100.64.204.241:3001",
 ];
 

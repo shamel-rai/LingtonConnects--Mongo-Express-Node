@@ -5,7 +5,7 @@ const path = require("path");
 const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select(
-      "username bio profilePicture interests followers following posts"
+      " displayName username bio profilePicture interests followers following posts"
     );
 
     if (!user) {
@@ -13,6 +13,7 @@ const getProfile = async (req, res) => {
     }
 
     res.status(200).json({
+      displayName: user.displayName,
       username: user.username,
       bio: user.bio,
       profilePicture: user.profilePicture || "https://via.placeholder.com/150",
