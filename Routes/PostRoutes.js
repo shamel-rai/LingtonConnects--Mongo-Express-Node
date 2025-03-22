@@ -7,7 +7,10 @@ const {
   like,
   comment,
   share,
-  deletePost
+  deletePost,
+  getComments,
+  updateComments,
+  delComments
 } = require("../Controller/PostController");
 
 const { uploadMultiple } = require("../Middleware/Upload");
@@ -24,8 +27,15 @@ router.route("/posts/:id/like").post(auth, like);
 
 router.route("/posts/:id/comment").post(auth, comment);
 
+router.route("/posts/:id/comments").get(auth, getComments)
 router.route("/posts/:id/share").post(auth, share);
 
 router.route("/posts/:id").post(auth, deletePost);
+
+router
+  .route("/posts/:postId/comments/:commentId")
+  .put(auth, updateComments)
+  .delete(auth, delComments);
+
 
 module.exports = router;
