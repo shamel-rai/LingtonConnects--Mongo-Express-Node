@@ -47,7 +47,7 @@ app.use(
 // Routes
 app.use("/api/v1", authRoutes);
 app.use("/api/v1", hompageRoutes);
-app.use("/api/v1", profileRoute);
+app.use("/api/v1/users", profileRoute);
 app.use("/api/v1", postRoute);
 app.use("/api/v1", roadmapRoutes)
 

@@ -17,6 +17,7 @@ const { uploadMultiple } = require("../Middleware/Upload");
 
 const router = express.Router();
 
+
 router.route("/posts").post(auth, uploadMultiple, addpost);
 
 router.route("/posts/all").get(auth, getAllPost);

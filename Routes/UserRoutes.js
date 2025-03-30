@@ -13,10 +13,14 @@ const {
   unfollowUser,
   searchUser,
 } = require("../Controller/ProfileController");
-
 const { auth } = require("../Middleware/Authentication");
 const { uploadSingle } = require("../Middleware/Upload");
+const { getUserPosts } = require("../Controller/PostController");
 const router = express.Router();
+
+router.get("/search", searchUser)
+router.get("/:id/posts", auth, getUserPosts);
+
 router.get("/:id", auth, getProfile);
 router.get("/:id/public", getPublicProfile);
 router.put("/:id", auth, updateProfile);
@@ -31,6 +35,6 @@ router.get("/:id/following", auth, getFollowing);
 router.put("/:id/follow", auth, followUser);
 router.put("/:id/unfollow", auth, unfollowUser);
 router.put("/:id/increment-post", auth, incrementPostCount);
-router.get("/search", searchUser)
+
 
 module.exports = router;

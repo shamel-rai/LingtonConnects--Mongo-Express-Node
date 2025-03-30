@@ -18,12 +18,12 @@ const getProfile = async (req, res) => {
       bio: user.bio,
       profilePicture: user.profilePicture || "https://via.placeholder.com/150",
       interests: user.interests || [],
-      followers: Array.isArray(user.followers) ? user.followers.length : 0,
+      followers: user.followers,  // return the full array
+      followersCount: Array.isArray(user.followers) ? user.followers.length : 0,
       following: Array.isArray(user.following) ? user.following.length : 0,
-      // followers: user.followers.length,
-      // following: user.following.length,
       posts: user.post || 0,
     });
+
   } catch (error) {
     res.status(500).json({
       error: "Failed to fetch the profile",
@@ -296,22 +296,24 @@ const incrementPostCount = async (req, res) => {
 };
 
 const searchUser = async (req, res) => {
-  const query = req.query.q?.trim(); //optional chaning to acesst the property safely 
-  if (!query) return res.status(400).json({ message: "Search query is required" })
+  const { query } = req.query;
+  if (!query) return res.status(400).json({ message: "Search query is required" });
 
   try {
-    const user = await User.find({
+    const users = await User.find({
       $or: [
-        { name: { $regex: query, $options: "1" } },
-        { username: { $regex: query, $options: "1" } }
+        { name: { $regex: query, $options: "i" } },
+        { username: { $regex: query, $options: "i" } }
       ],
-    }).select("-password -email -__v")
+    }).select("-password -email -__v");
+
     res.status(200).json(users);
   } catch (error) {
     console.error("Search error: ", error.message);
-    res.status(500).json({ message: "Internal server error" })
+    res.status(500).json({ message: "Internal server error" });
   }
-}
+};
+
 
 module.exports = {
   getProfile,

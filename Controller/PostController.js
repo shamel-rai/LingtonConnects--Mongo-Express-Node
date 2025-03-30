@@ -293,3 +293,25 @@ exports.delComments = async (req, res) => {
     return res.status(500).json({ error: "Unable to delete comment" });
   }
 };
+
+exports.getUserPosts = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    const posts = await Post.find({ user: userId })
+      .populate("user", "username profilePicture displayName")
+      .populate("comments.user", "username profilePicture displayName")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      message: `Posts for user ${userId}`,
+      posts,
+    });
+  } catch (error) {
+    console.error("Error fetching user posts:", error);
+    return res.status(500).json({
+      message: "Error fetching user posts",
+      error: error.message,
+    });
+  }
+};
