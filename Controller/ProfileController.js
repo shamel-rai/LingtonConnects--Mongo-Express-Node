@@ -295,6 +295,24 @@ const incrementPostCount = async (req, res) => {
   }
 };
 
+const searchUser = async (req, res) => {
+  const query = req.query.q?.trim(); //optional chaning to acesst the property safely 
+  if (!query) return res.status(400).json({ message: "Search query is required" })
+
+  try {
+    const user = await User.find({
+      $or: [
+        { name: { $regex: query, $options: "1" } },
+        { username: { $regex: query, $options: "1" } }
+      ],
+    }).select("-password -email -__v")
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Search error: ", error.message);
+    res.status(500).json({ message: "Internal server error" })
+  }
+}
+
 module.exports = {
   getProfile,
   getPublicProfile,
@@ -305,4 +323,5 @@ module.exports = {
   incrementPostCount,
   followUser,
   unfollowUser,
+  searchUser
 };
