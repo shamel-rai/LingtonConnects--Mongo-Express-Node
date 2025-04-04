@@ -1,7 +1,6 @@
 const http = require("http");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
-// const { initializedSocket } = require('./service/socketService')
 
 dotenv.config({ path: "./config.env" });
 
@@ -23,4 +22,7 @@ const server = app.listen(port, () => {
   console.log(`Server is listening to port: ${port}`);
 });
 
-// initializedSocket(server);
+
+const socketService = require("./services/socketServices");
+socketService.initSocket(server);
+

@@ -9,7 +9,8 @@ const authRoutes = require("./Routes/AuthenticationRoutes");
 const hompageRoutes = require("./Routes/HomePageRoute");
 const profileRoute = require("./Routes/UserRoutes");
 const postRoute = require("./Routes/PostRoutes")
-const roadmapRoutes = require("./Routes/RoadmapRoutes")
+const roadmapRoutes = require("./Routes/RoadmapRoutes");
+const messageRoutes = require("./Routes/MessageRoutes");
 const app = express();
 
 // Allowed origins for CORS
@@ -49,6 +50,8 @@ app.use("/api/v1", authRoutes);
 app.use("/api/v1", hompageRoutes);
 app.use("/api/v1/users", profileRoute);
 app.use("/api/v1", postRoute);
-app.use("/api/v1", roadmapRoutes)
+app.use("/api/v1", roadmapRoutes);
+app.use("/api/v1", messageRoutes);
+
 
 module.exports = app;
