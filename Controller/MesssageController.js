@@ -5,19 +5,17 @@ const socketService = require("../services/socketServices");
 exports.sendMessage = async (req, res) => {
     try {
         const { conversationId, text } = req.body;
-        // Ensure the user is authenticated (auth middleware should set req.user)
         if (!conversationId || !text || !req.user) {
             return res.status(400).json({ error: "Conversation ID, text, and authenticated user are required" });
         }
 
-        // Use the authenticated user's details for sender info with fallbacks.
+        // Use dynamic data from req.user (ensure req.user.avatar is set)
         const sender = {
-            _id: req.user.id,  // or req.user._id, based on your auth payload
+            _id: req.user.id,
             name: req.user.name || `User ${req.user.id}`,
-            avatar: req.user.avatar || "https://via.placeholder.com/50",
+            avatar: req.user.avatar || "https://via.placeholder.com/50", // default fallback
         };
 
-        // 1) Create & save new message with the sender info
         const newMessage = new Message({
             conversationId,
             text,
@@ -27,7 +25,6 @@ exports.sendMessage = async (req, res) => {
         });
         await newMessage.save();
 
-        // 2) Update conversation’s lastMessage info (including sender details)
         await Conversation.findByIdAndUpdate(conversationId, {
             lastMessage: {
                 text,
@@ -37,10 +34,7 @@ exports.sendMessage = async (req, res) => {
             read: false,
         });
 
-        // 3) Emit the new message to connected clients in the conversation room
         socketService.emitNewMessage(conversationId, newMessage);
-
-        // 4) Respond with the newly created message
         res.status(201).json(newMessage);
     } catch (error) {
         console.error("Error sending message:", error);
