@@ -2,6 +2,11 @@ const User = require("../Models/UserModel");
 const fs = require("fs");
 const path = require("path");
 
+const Notification = require("../Models/NotificationModel");
+const tokenModel = require("../Models/tokenModels.js");
+const { sendNotification } = require("../services/notificationService");
+const socketService = require("../services/socketServices.js")
+
 const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select(
@@ -18,12 +23,11 @@ const getProfile = async (req, res) => {
       bio: user.bio,
       profilePicture: user.profilePicture || "https://via.placeholder.com/150",
       interests: user.interests || [],
-      followers: user.followers,  // return the full array
+      followers: user.followers,
       followersCount: Array.isArray(user.followers) ? user.followers.length : 0,
       following: Array.isArray(user.following) ? user.following.length : 0,
       posts: user.post || 0,
     });
-
   } catch (error) {
     res.status(500).json({
       error: "Failed to fetch the profile",
@@ -51,39 +55,6 @@ const getPublicProfile = async (req, res) => {
     });
   }
 };
-
-// Update profile (authenticated user)
-// const updateProfile = async (req, res) => {
-//   try {
-//     const { username, bio, interests } = req.body;
-//     const updateFields = { username, bio };
-
-//     if (interests) {
-//       updateFields.interests = Array.isArray(interests)
-//         ? interests
-//         : JSON.parse(interests);
-//     }
-
-//     const user = await User.findByIdAndUpdate(req.params.id, updateFields, {
-//       new: true,
-//       runValidators: true,
-//     });
-
-//     if (!user) {
-//       return res.status(404).json({ error: "User not found" });
-//     }
-
-//     res.status(200).json({
-//       message: "Profile updated successfully",
-//       user,
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       error: "Failed to update profile",
-//       details: error.message,
-//     });
-//   }
-// };
 
 const updateProfile = async (req, res) => {
   try {
@@ -168,7 +139,6 @@ const updateProfilePicture = async (req, res) => {
   }
 };
 
-// Get followers
 const getFollowers = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).populate(
@@ -192,7 +162,6 @@ const getFollowers = async (req, res) => {
   }
 };
 
-// Get following
 const getFollowing = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).populate(
@@ -216,10 +185,14 @@ const getFollowing = async (req, res) => {
   }
 };
 
-// Follow a user
+/**
+ * Follow a user -> create "follow" notification, optionally push + socket
+ */
 const followUser = async (req, res) => {
   try {
+    // user being followed (target) is found by req.params.id
     const user = await User.findById(req.params.id);
+    // current user performing follow
     const currentUser = await User.findById(req.user.id);
 
     if (!user || !currentUser) {
@@ -231,14 +204,31 @@ const followUser = async (req, res) => {
       currentUser.following.push(req.params.id);
       await user.save();
       await currentUser.save();
+
+      // Create and emit follow notification
+      try {
+        const newNotification = await Notification.create({
+          type: "follow",
+          senderId: currentUser._id, // Who followed
+          receiverId: user._id,      // Who is being followed
+          message: `${currentUser.username} followed you!`,
+        });
+
+        const tokens = tokenModel.getTokens();
+        if (tokens.length > 0) {
+          await sendNotifications(tokens, "New Follower", `${currentUser.username} followed you!`);
+        }
+
+        // Emit the live notification event
+        socketService.emitNotification(user._id, newNotification);
+      } catch (notifyError) {
+        console.error("Error creating follow notification:", notifyError);
+      }
     }
 
     res.status(200).json({ message: "Followed user successfully" });
   } catch (error) {
-    res.status(500).json({
-      error: "Failed to follow user",
-      details: error.message,
-    });
+    res.status(500).json({ error: "Failed to follow user", details: error.message });
   }
 };
 
@@ -271,7 +261,6 @@ const unfollowUser = async (req, res) => {
   }
 };
 
-// Increment post count
 const incrementPostCount = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -314,7 +303,6 @@ const searchUser = async (req, res) => {
   }
 };
 
-
 module.exports = {
   getProfile,
   getPublicProfile,
@@ -325,5 +313,5 @@ module.exports = {
   incrementPostCount,
   followUser,
   unfollowUser,
-  searchUser
+  searchUser,
 };

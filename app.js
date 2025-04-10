@@ -12,6 +12,7 @@ const postRoute = require("./Routes/PostRoutes")
 const roadmapRoutes = require("./Routes/RoadmapRoutes");
 const messageRoutes = require("./Routes/MessageRoutes");
 const studyBuddyRoutes = require("./Routes/StudyBuddyRoutes");
+const notificationRoutes = require("./Routes/NotificationRoutes");
 const app = express();
 
 // Allowed origins for CORS
@@ -54,5 +55,6 @@ app.use("/api/v1", postRoute);
 app.use("/api/v1", roadmapRoutes);
 app.use("/api/v1", messageRoutes);
 app.use("/api/v1", studyBuddyRoutes);
+app.use("/api/v1", notificationRoutes)
 
 module.exports = app;
