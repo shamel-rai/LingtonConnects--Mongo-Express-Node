@@ -4,8 +4,10 @@ const {
     getMessage,
     getConversation,
     getOrCreate,
+    getUnreadCount
 } = require("../Controller/MesssageController");
 const { auth } = require("../Middleware/Authentication");
+
 
 const router = express.Router();
 
@@ -19,5 +21,6 @@ router.route("/conversations").get(auth, getConversation);
 
 // The getOrCreate endpoint can also be protected by authMiddleware.
 router.route("/conversations/getOrCreate").post(auth, getOrCreate);
+router.route("/unread").get(auth, getUnreadCount)
 
 module.exports = router;

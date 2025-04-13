@@ -100,3 +100,25 @@ exports.getOrCreate = async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 };
+
+exports.getUnreadCount = async (req, res) => {
+    try {
+        const { userId } = req.query;
+
+        if (!userId) {
+            return res.status(400).json({ error: "Missing userId parameter" });
+        }
+
+        // Count messages that are unread and where sender._id is not equal to userId.
+        const unreadCount = await Message.countDocuments({
+            read: false,
+            "sender._id": { $ne: userId },
+        });
+
+        return res.json({ unreadCount });
+    } catch (error) {
+        console.error("Error in getUnreadCount:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+};
+

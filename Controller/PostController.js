@@ -9,6 +9,7 @@ const fs = require("fs");
 const Notification = require("../Models/NotificationModel");
 const { sendNotifications } = require("../services/notificationService");
 const tokenModel = require("../Models/tokenModels");
+const socketService = require("../services/socketServices");
 
 /**
  * Create post
@@ -327,6 +328,12 @@ exports.updateComments = async (req, res) => {
       return res.status(404).json({ message: "Comment not found" });
     }
 
+    // Ensure the comment belongs to the requesting user
+    if (post.comments[commentIndex].user.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Unauthorized: You can only edit your own comment." });
+    }
+
+    // Update the comment
     post.comments[commentIndex].content = content;
     post.comments[commentIndex].time = new Date();
     await post.save();
@@ -343,6 +350,7 @@ exports.updateComments = async (req, res) => {
   }
 };
 
+
 /**
  * Delete a comment on a post
  */
@@ -355,6 +363,18 @@ exports.delComments = async (req, res) => {
       return res.status(404).json({ message: "Post not found" });
     }
 
+    // Find the comment to be deleted
+    const comment = post.comments.find(c => c._id.toString() === commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    // Ensure the comment belongs to the requesting user
+    if (comment.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Unauthorized: You can only delete your own comment." });
+    }
+
+    // Remove the comment
     post.comments = post.comments.filter(
       (c) => c._id.toString() !== commentId
     );
