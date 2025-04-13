@@ -16,7 +16,7 @@ const socketService = require("../services/socketServices");
  */
 exports.addpost = async (req, res) => {
   try {
-    const { content, location, tags } = req.body;
+    const { content, location } = req.body;
     const userId = req.user.id;
 
     if (!content && (!req.files || req.files.length === 0)) {
@@ -30,18 +30,13 @@ exports.addpost = async (req, res) => {
         return `uploads/${file.filename}`;
       });
     }
-    let taggedUsers = [];
-    if (tags && tags.length > 0) {
-      const foundUsers = await User.find({ _id: { $in: tags } }).select("_id");
-      taggedUsers = foundUsers.map(user => user._id);
-    }
 
+    // Create the new post without tags
     const newPost = new Post({
       user: userId,
       content,
       media,
       location,
-      tags: taggedUsers,
     });
 
     await newPost.save();
@@ -59,7 +54,6 @@ exports.getAllPost = async (req, res) => {
   try {
     const posts = await Post.find({})
       .populate("user", "username profilePicture fullname")
-      .populate("tags", "username")
       .populate({
         path: "comments.user",
         select: "username profilePicture fullname"
@@ -86,8 +80,7 @@ exports.getPost = async (req, res) => {
     const followedUser = user.following.map((f) => f.id);
 
     const post = await Post.find({ user: { $in: followedUser } })
-      .populate("user", "username profilepicture fullname")
-      .populate("tags", "username")
+      .populate("user", "username profilePicture fullname")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -155,6 +148,7 @@ exports.like = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 /**
  * Comment on a post
  */
@@ -220,39 +214,57 @@ exports.comment = async (req, res) => {
 exports.share = async (req, res) => {
   try {
     const userId = req.user.id;
-    const post = await Post.findById(req.params.id).populate("user");
-    if (!post) return res.status(404).json({ message: "Post not found" });
-
-    post.shares += 1;
-    await post.save();
-
-    // Create notification for sharing
-    try {
-      const newNotification = await Notification.create({
-        type: "share",
-        senderId: userId,
-        receiverId: post.user._id,
-        postId: post._id,
-        message: "Someone shared your post!",
-      });
-
-      const tokens = tokenModel.getTokens();
-      if (tokens.length > 0) {
-        await sendNotifications(tokens, "New Share!", "Someone shared your post.");
-      }
-
-      // Emit real-time notification
-      socketService.emitNotification(post.user._id, newNotification);
-    } catch (notifyError) {
-      console.error("Notification error in share:", notifyError);
+    const originalPost = await Post.findById(req.params.id).populate("user");
+    if (!originalPost) {
+      return res.status(404).json({ message: "Post not found" });
     }
 
-    res.status(200).json({ message: "Post shared", post });
+    originalPost.shares += 1;
+    await originalPost.save();
+
+    // Create a new post object for sharing if needed.
+    const sharedPost = new Post({
+      user: userId,
+      content: originalPost.content,
+      media: originalPost.media,
+      isShared: true,
+      originalPost: originalPost._id,
+    });
+    await sharedPost.save();
+
+    // Only send notification if the user is not sharing their own post.
+    if (originalPost.user && originalPost.user._id.toString() !== userId) {
+      try {
+        // Create notification in DB
+        const newNotification = await Notification.create({
+          type: "share",
+          senderId: userId,
+          receiverId: originalPost.user._id, // Original post owner
+          postId: originalPost._id,
+          message: "Someone shared your post!",
+        });
+
+        // Get push notification tokens and send them if available.
+        const tokens = tokenModel.getTokens();
+        if (tokens.length > 0) {
+          await sendNotifications(tokens, "New Share!", "Someone shared your post!");
+        }
+
+        // Emit real-time notification via sockets.
+        socketService.emitNotification(originalPost.user._id, newNotification);
+      } catch (notifyError) {
+        console.error("Notification error in share:", notifyError);
+      }
+    }
+
+    res.status(200).json({ message: "Post shared successfully", sharedPost });
   } catch (error) {
-    console.error("Error sharing post:", error);
+    console.error("Error sharing post: ", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+
 /**
  * Delete a post
  */
@@ -266,25 +278,12 @@ exports.deletePost = async (req, res) => {
       return res.status(404).json({ message: "Post not found" });
     }
 
-    // Check if the user is the owner of the post
+    // Ensure the requesting user is the post owner
     if (post.user.toString() !== userId) {
       return res.status(401).json({ message: "Unauthorized: You cannot delete this post" });
     }
 
-    // Delete associated media files if any
-    if (post.media && post.media.length > 0) {
-      for (const filePath of post.media) {
-        const fullFilePath = path.join(__dirname, "..", filePath);
-        try {
-          await fs.promises.unlink(fullFilePath);
-          console.log(`Deleted file: ${fullFilePath}`);
-        } catch (error) {
-          console.error(`Error deleting file ${fullFilePath}:`, error);
-        }
-      }
-    }
-
-    // Delete post from database
+    // Remove associated media, etc.
     await Post.findByIdAndDelete(postId);
     res.status(200).json({ message: "Post and associated media deleted successfully" });
   } catch (error) {
@@ -349,7 +348,6 @@ exports.updateComments = async (req, res) => {
     return res.status(500).json({ error: "Unable to update comment" });
   }
 };
-
 
 /**
  * Delete a comment on a post

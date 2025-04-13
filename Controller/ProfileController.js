@@ -26,6 +26,7 @@ const getProfile = async (req, res) => {
       followers: user.followers,
       followersCount: Array.isArray(user.followers) ? user.followers.length : 0,
       following: Array.isArray(user.following) ? user.following.length : 0,
+      following: user.following,
       posts: user.post || 0,
     });
   } catch (error) {
@@ -261,6 +262,30 @@ const unfollowUser = async (req, res) => {
   }
 };
 
+const followBackUser = async (req, res) => {
+  const currentUserId = req.user.id;
+  const senderId = req.params.senderId;
+
+  const currentUser = await User.findById(currentUserId);
+  const senderUser = await User.findById(senderId);
+
+  if (!currentUser || !senderUser) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  // If not already following
+  if (!currentUser.following.includes(senderId)) {
+    currentUser.following.push(senderId);
+    senderUser.followers.push(currentUserId);
+
+    await currentUser.save();
+    await senderUser.save();
+  }
+
+  res.status(200).json({ success: true, message: "Followed back successfully" });
+};
+
+
 const incrementPostCount = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -314,4 +339,5 @@ module.exports = {
   followUser,
   unfollowUser,
   searchUser,
+  followBackUser
 };

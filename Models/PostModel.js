@@ -16,15 +16,6 @@ const postSchema = new mongoose.Schema(
         type: String, // Supports multiple images/videos
       },
     ],
-    location: {
-      type: String, // Optional location
-    },
-    tags: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User", // Stores tagged user IDs
-      },
-    ],
     likes: {
       type: Number,
       default: 0,
@@ -55,6 +46,14 @@ const postSchema = new mongoose.Schema(
     shares: {
       type: Number,
       default: 0,
+    },
+    isShared: {
+      type: Boolean,
+      default: false
+    },
+    originalPost: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Post"
     },
   },
   { timestamps: true } // Enables `createdAt` and `updatedAt` automatically

@@ -31,7 +31,7 @@ router.route("/posts/:id/comment").post(auth, comment);
 router.route("/posts/:id/comments").get(auth, getComments)
 router.route("/posts/:id/share").post(auth, share);
 
-router.route("/posts/:id").post(auth, deletePost);
+router.route("/posts/:id").delete(auth, deletePost);
 
 router
   .route("/posts/:postId/comments/:commentId")

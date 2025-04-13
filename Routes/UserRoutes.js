@@ -11,6 +11,7 @@ const {
   incrementPostCount,
   followUser,
   unfollowUser,
+  followBackUser,
   searchUser,
 } = require("../Controller/ProfileController");
 const { auth } = require("../Middleware/Authentication");
@@ -35,6 +36,8 @@ router.get("/:id/following", auth, getFollowing);
 router.put("/:id/follow", auth, followUser);
 router.put("/:id/unfollow", auth, unfollowUser);
 router.put("/:id/increment-post", auth, incrementPostCount);
+router.post("/follow/:userId/followback/:senderId", auth, followBackUser);
+
 
 
 module.exports = router;
