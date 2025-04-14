@@ -13,15 +13,16 @@ const roadmapRoutes = require("./Routes/RoadmapRoutes");
 const messageRoutes = require("./Routes/MessageRoutes");
 const studyBuddyRoutes = require("./Routes/StudyBuddyRoutes");
 const notificationRoutes = require("./Routes/NotificationRoutes");
+const khaltiRoutes = require('./Routes/KhaltiRoutes')
 const app = express();
 
-// Allowed origins for CORS
+
 const allowedOrigins = [
-  "http://192.168.101.5:8081",
-  "http://192.168.101.5",
+  "http://192.168.101.6:8081",
+  "http://192.168.101.6",
   "http://100.64.204.241:8081",
-  "http://localhost:8081", // Allow localhost for debugging
-  "http://192.168.101.5:3001", // Ensure React Native Expo is allowed
+  "http://localhost:8081",
+  "http://192.168.101.6:3001",
   "http://100.64.204.241:3001",
 ];
 
@@ -47,7 +48,7 @@ app.use(
   })
 );
 
-// Routes
+// Register your routes
 app.use("/api/v1", authRoutes);
 app.use("/api/v1", hompageRoutes);
 app.use("/api/v1/users", profileRoute);
@@ -55,6 +56,7 @@ app.use("/api/v1", postRoute);
 app.use("/api/v1", roadmapRoutes);
 app.use("/api/v1", messageRoutes);
 app.use("/api/v1", studyBuddyRoutes);
-app.use("/api/v1", notificationRoutes)
+app.use("/api/v1", notificationRoutes);
+app.use("/api/v1", khaltiRoutes);
 
 module.exports = app;
