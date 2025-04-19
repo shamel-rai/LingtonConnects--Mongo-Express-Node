@@ -68,7 +68,9 @@ const UserSchema = new mongoose.Schema(
       default: false
     },
     paidAt: { type: Date },
-    paymentHistory: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Payment' }]
+    paymentHistory: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Payment' }],
+    resetPasswordToken: String,
+    resetPasswordExpires: Date
   },
   { timestamps: true }
 );
