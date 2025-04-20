@@ -115,23 +115,19 @@ exports.logout = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
-// POST  /forgot-password
 exports.forgotPassword = async (req, res) => {
-  const { username } = req.body;               //  ← username only
+  const { username } = req.body;
   const user = await User.findOne({ username });
   if (!user) return res.status(404).json({ message: "User not found" });
 
   const token = crypto.randomBytes(2).toString("hex");   // e.g. "3f8c"
   user.resetPasswordToken = token;
-  user.resetPasswordExpires = Date.now() + 10 * 60 * 1e3; // 10 minutes
+  user.resetPasswordExpires = Date.now() + 10 * 60 * 1e3;
   await user.save();
 
-  // return the code instead of sending e‑mail
   res.status(200).json({ resetCode: token, expiresIn: 600 });
 };
 
-// POST  /reset-password
 exports.resetPassword = async (req, res) => {
   const { username, code, newPassword } = req.body;
   const user = await User.findOne({
@@ -141,7 +137,7 @@ exports.resetPassword = async (req, res) => {
   });
   if (!user) return res.status(400).json({ message: "Invalid or expired code" });
 
-  user.password = newPassword;           // pre‑save hook hashes it
+  user.password = newPassword;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpires = undefined;
   await user.save();
