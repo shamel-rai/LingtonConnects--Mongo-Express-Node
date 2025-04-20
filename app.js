@@ -15,6 +15,7 @@ const studyBuddyRoutes = require("./Routes/StudyBuddyRoutes");
 const notificationRoutes = require("./Routes/NotificationRoutes");
 const khaltiRoutes = require('./Routes/KhaltiRoutes')
 const jobRoutes = require("./Routes/JobRoutes");
+const mentorRoutes = require("./Routes/MentorRoutes");
 const app = express();
 
 
@@ -60,5 +61,6 @@ app.use("/api/v1", studyBuddyRoutes);
 app.use("/api/v1", notificationRoutes);
 app.use("/api/v1", khaltiRoutes);
 app.use("/api/v1", jobRoutes);
+app.use("/api/v1", mentorRoutes);
 
 module.exports = app;
